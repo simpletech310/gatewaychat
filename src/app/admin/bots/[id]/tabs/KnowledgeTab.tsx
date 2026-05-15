@@ -18,6 +18,11 @@ export default function KnowledgeTab({ botId }: { botId: string }) {
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scrapeMode, setScrapeMode] = useState<"single" | "crawl">("crawl");
+  const [scraping, setScraping] = useState(false);
+  const [scrapeMsg, setScrapeMsg] = useState<string | null>(null);
+
   async function load() {
     setLoading(true);
     const res = await fetch(`/api/admin/bots/${botId}/knowledge`);
@@ -44,6 +49,32 @@ export default function KnowledgeTab({ botId }: { botId: string }) {
     } else {
       const data = await res.json().catch(() => ({}));
       setErr(typeof data.error === "string" ? data.error : "Upload failed");
+    }
+  }
+
+  async function scrape() {
+    setScrapeMsg(null);
+    setErr(null);
+    if (!scrapeUrl) return;
+    setScraping(true);
+    try {
+      const res = await fetch(`/api/admin/bots/${botId}/scrape`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: scrapeUrl, mode: scrapeMode }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setScrapeMsg(`Indexed ${data.pages} page(s), ${data.totalChunks} chunks.`);
+        setScrapeUrl("");
+        await load();
+      } else {
+        setErr(typeof data.error === "string" ? data.error : "Scrape failed");
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Scrape failed");
+    } finally {
+      setScraping(false);
     }
   }
 
@@ -85,6 +116,39 @@ export default function KnowledgeTab({ botId }: { botId: string }) {
           {uploading ? "Uploading…" : "+ Upload file"}
         </button>
         <span className="text-xs text-slate-500">Max 8MB per file</span>
+      </div>
+
+      <div className="border-t pt-4">
+        <h3 className="text-sm font-medium mb-1">Scrape a website</h3>
+        <p className="text-xs text-slate-500 mb-2">
+          Paste a starting URL. In <strong>crawl</strong> mode the scraper follows same-domain
+          links up to ~12 pages.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="url"
+            value={scrapeUrl}
+            onChange={(e) => setScrapeUrl(e.target.value)}
+            placeholder="https://www.example.com"
+            className="flex-1 border border-slate-300 rounded-md px-3 py-2 text-sm"
+          />
+          <select
+            value={scrapeMode}
+            onChange={(e) => setScrapeMode(e.target.value as "single" | "crawl")}
+            className="border border-slate-300 rounded-md px-2 py-2 text-sm"
+          >
+            <option value="crawl">Crawl site</option>
+            <option value="single">Single page</option>
+          </select>
+          <button
+            onClick={scrape}
+            disabled={scraping || !scrapeUrl}
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+          >
+            {scraping ? "Scraping…" : "Scrape"}
+          </button>
+        </div>
+        {scrapeMsg && <p className="text-xs text-emerald-700 mt-2">{scrapeMsg}</p>}
       </div>
 
       {err && <div className="text-sm text-red-600">{err}</div>}

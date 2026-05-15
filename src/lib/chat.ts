@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { db } from "./db";
-import { chatbots, conversations, leads, messages } from "./db/schema";
-import { eq, sql, desc, asc } from "drizzle-orm";
+import { bookingSlots, bookings, chatbots, conversations, leads, messages } from "./db/schema";
+import { and, eq, sql, desc, asc, gte } from "drizzle-orm";
 import { embed, toPgVector } from "./embeddings";
 import { anthropic, CLAUDE_MODEL } from "./claude";
 import { buildTools } from "./tools";
@@ -274,6 +274,106 @@ async function executeTool(opts: {
       }
 
       return `Lead saved. Confirm to the visitor: "Got it, ${name} — we'll be in touch at ${email} soon."`;
+    }
+
+    if (toolName === "list_available_appointment_slots") {
+      const now = new Date();
+      const slots = await db
+        .select()
+        .from(bookingSlots)
+        .where(
+          and(
+            eq(bookingSlots.chatbotId, bot.id),
+            eq(bookingSlots.isBooked, false),
+            gte(bookingSlots.startAt, now),
+          ),
+        )
+        .orderBy(asc(bookingSlots.startAt))
+        .limit(10);
+
+      if (slots.length === 0) {
+        return "No appointment slots are currently available. Tell the visitor that, offer to take their contact info via submit_lead_form, and let them know the team will reach out to schedule manually.";
+      }
+      const lines = slots.map((s) => {
+        const fmt = s.startAt.toLocaleString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          timeZoneName: "short",
+        });
+        return `- slot_id=${s.id} | ${fmt} (${s.durationMinutes} min)`;
+      });
+      return `Available slots (present these to the visitor in human-friendly form — do NOT show the slot_id values to the visitor; remember them yourself so you can call book_appointment with the right slot_id once they pick):\n${lines.join("\n")}`;
+    }
+
+    if (toolName === "book_appointment") {
+      const slotId = String(data.slot_id ?? "");
+      const name = String(data.name ?? "").trim();
+      const email = String(data.email ?? "").trim();
+      const phone = data.phone ? String(data.phone) : null;
+      const notes = data.notes ? String(data.notes) : null;
+      if (!slotId || !name || !email) {
+        return "Error: slot_id, name, and email are all required.";
+      }
+
+      // Atomic claim: only succeeds if the slot exists for this bot and is not yet booked.
+      const claimed = await db
+        .update(bookingSlots)
+        .set({ isBooked: true })
+        .where(
+          and(
+            eq(bookingSlots.id, slotId),
+            eq(bookingSlots.chatbotId, bot.id),
+            eq(bookingSlots.isBooked, false),
+          ),
+        )
+        .returning();
+
+      if (claimed.length === 0) {
+        return "Error: that slot is no longer available. Call list_available_appointment_slots again and offer the visitor a different time.";
+      }
+
+      const slot = claimed[0];
+      await db.insert(bookings).values({
+        chatbotId: bot.id,
+        slotId: slot.id,
+        conversationId,
+        name,
+        email,
+        phone: phone ?? undefined,
+        notes: notes ?? undefined,
+      });
+
+      await db
+        .update(conversations)
+        .set({ visitorName: name, visitorEmail: email })
+        .where(eq(conversations.id, conversationId));
+
+      // Best-effort team notification.
+      if (bot.handoffEmail) {
+        try {
+          await sendEmail({
+            to: bot.handoffEmail,
+            subject: `[${bot.name}] New booking: ${name}`,
+            text: `New appointment booked via the chatbot.\n\nWhen:   ${slot.startAt.toLocaleString()}\nLength: ${slot.durationMinutes} min\n\nName:   ${name}\nEmail:  ${email}\nPhone:  ${phone ?? "-"}\n\nNotes:\n${notes ?? "(none)"}\n\nConversation ID: ${conversationId}`,
+            replyTo: email,
+          });
+        } catch {
+          // Booking is saved; email is best-effort.
+        }
+      }
+
+      const human = slot.startAt.toLocaleString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+      return `Booked successfully. Confirm to the visitor: "You're all set, ${name}! I've booked your ${slot.durationMinutes}-minute call for ${human}. A confirmation will be sent to ${email}."`;
     }
 
     if (toolName === "share_booking_link") {

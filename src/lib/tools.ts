@@ -64,22 +64,55 @@ export function buildTools(bot: Chatbot): ToolDef[] {
     });
   }
 
-  if (bot.enableBooking && bot.bookingLink) {
+  if (bot.enableBooking) {
+    // Built-in slot-based booking takes priority over an external link.
     tools.push({
-      name: "share_booking_link",
+      name: "list_available_appointment_slots",
       description:
-        "Share the booking link with the visitor when they want to schedule an appointment, demo, or call. Do not invent times — just share the link and let them pick a slot.",
+        "List the upcoming appointment time slots that are still available. Use this when the visitor wants to schedule a call/appointment, so you can offer them concrete time options. Always call this BEFORE asking the visitor to pick a time.",
+      input_schema: {
+        type: "object" as const,
+        properties: {},
+      },
+    });
+
+    tools.push({
+      name: "book_appointment",
+      description:
+        "Book a specific time slot for the visitor. Only call this after the visitor has chosen one of the slots returned by list_available_appointment_slots AND has provided their name and email. The slot will become unavailable immediately. If the slot is already taken, this returns an error and you should re-list available slots.",
       input_schema: {
         type: "object" as const,
         properties: {
-          reason: {
+          slot_id: {
             type: "string",
-            description: "What the visitor is trying to book.",
+            description: "The id of the slot the visitor chose (from list_available_appointment_slots).",
+          },
+          name: { type: "string", description: "Visitor's full name." },
+          email: { type: "string", description: "Visitor's email address." },
+          phone: { type: "string", description: "Visitor's phone number (optional)." },
+          notes: {
+            type: "string",
+            description: "Anything the team should know before the call (optional).",
           },
         },
-        required: ["reason"],
+        required: ["slot_id", "name", "email"],
       },
     });
+
+    if (bot.bookingLink) {
+      tools.push({
+        name: "share_booking_link",
+        description:
+          "Share an external booking link with the visitor as a fallback ONLY if no internal time slots are available. Prefer list_available_appointment_slots + book_appointment first.",
+        input_schema: {
+          type: "object" as const,
+          properties: {
+            reason: { type: "string", description: "What the visitor is trying to book." },
+          },
+          required: ["reason"],
+        },
+      });
+    }
   }
 
   return tools;

@@ -5,12 +5,14 @@ Lightweight, multi-tenant chatbot management. Create chatbots, give each one a s
 ## What it does
 
 - **Per-client chatbots** — name, title, system prompt, logo, color, welcome message
-- **RAG knowledge base** — upload `.pdf`, `.docx`, `.txt`, `.md`. Files are chunked and embedded with Voyage `voyage-3-lite`, retrieved at chat time via pgvector cosine search
-- **Tool-using agent** — Claude Haiku 4.5 with three configurable tools:
+- **RAG knowledge base** — upload `.pdf`, `.docx`, `.txt`, `.md` **or scrape a whole website**. Content is chunked, embedded with Voyage `voyage-3-lite`, and retrieved at chat time via pgvector cosine search
+- **Tool-using agent** — Claude Haiku 4.5 with these configurable tools:
   - `send_email_to_human` — notifies your team via Resend when the visitor wants to talk to a person
   - `submit_lead_form` — captures contact info into the leads table
-  - `share_booking_link` — hands out a Cal.com/Calendly link
-- **Admin portal** — list/create/edit bots, upload knowledge, view conversations & leads (CSV export), copy embed snippet
+  - `list_available_appointment_slots` + `book_appointment` — built-in booking system. Slots disappear when chosen, no double-booking
+  - `share_booking_link` — optional fallback to an external Cal.com/Calendly link
+- **Built-in booking** — publish time slots in the admin, the bot offers them to visitors, slots are atomically claimed
+- **Admin portal** — list/create/edit bots, upload knowledge or scrape sites, manage booking slots, view conversations & leads (CSV export), copy embed snippet
 - **Embed widget** — one `<script>` tag drops a chat bubble on any site. CORS-enabled, no framework required
 
 ## Stack
@@ -42,6 +44,22 @@ Lightweight, multi-tenant chatbot management. Create chatbots, give each one a s
    npm run dev
    ```
    Open `http://localhost:3000`, sign in, create a chatbot.
+
+### Seed the Travis demo bot for 4everforward.net
+
+After running `db:migrate` and `seed`:
+
+```bash
+npm run seed:travis
+```
+
+This will:
+1. Create a chatbot named **Travis** with a 4Ever Forward–tailored system prompt
+2. Crawl `https://www.4everforward.net/` (up to ~15 pages), chunk + embed the content
+3. Add 15 sample 30-min booking slots across the next two weekdays
+4. Print the embed snippet you can paste into the 4Ever Forward site
+
+Optional env: `TRAVIS_HANDOFF_EMAIL=team@4everforward.net` to override the default notification address.
 
 ## Deploy to Vercel
 

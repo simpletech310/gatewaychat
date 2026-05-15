@@ -8,8 +8,9 @@ import KnowledgeTab from "./tabs/KnowledgeTab";
 import ConversationsTab from "./tabs/ConversationsTab";
 import LeadsTab from "./tabs/LeadsTab";
 import EmbedTab from "./tabs/EmbedTab";
+import BookingTab from "./tabs/BookingTab";
 
-type Tab = "settings" | "knowledge" | "conversations" | "leads" | "embed";
+type Tab = "settings" | "knowledge" | "booking" | "conversations" | "leads" | "embed";
 
 export default function BotEditor({ bot, appUrl }: { bot: Chatbot; appUrl: string }) {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function BotEditor({ bot, appUrl }: { bot: Chatbot; appUrl: strin
           [
             ["settings", "Settings"],
             ["knowledge", "Knowledge"],
+            ["booking", "Booking"],
             ["conversations", "Conversations"],
             ["leads", "Leads"],
             ["embed", "Embed code"],
@@ -67,6 +69,7 @@ export default function BotEditor({ bot, appUrl }: { bot: Chatbot; appUrl: strin
       <div>
         {tab === "settings" && <SettingsTab bot={current} onChange={setCurrent} />}
         {tab === "knowledge" && <KnowledgeTab botId={current.id} />}
+        {tab === "booking" && <BookingTab botId={current.id} />}
         {tab === "conversations" && <ConversationsTab botId={current.id} />}
         {tab === "leads" && <LeadsTab botId={current.id} />}
         {tab === "embed" && <EmbedTab bot={current} appUrl={appUrl} />}

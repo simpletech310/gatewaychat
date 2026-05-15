@@ -151,8 +151,45 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const bookingSlots = pgTable(
+  "booking_slots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    chatbotId: uuid("chatbot_id")
+      .notNull()
+      .references(() => chatbots.id, { onDelete: "cascade" }),
+    startAt: timestamp("start_at").notNull(),
+    durationMinutes: integer("duration_minutes").notNull().default(30),
+    isBooked: boolean("is_booked").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    botStartIdx: index("booking_slots_bot_start_idx").on(table.chatbotId, table.startAt),
+  }),
+);
+
+export const bookings = pgTable("bookings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  chatbotId: uuid("chatbot_id")
+    .notNull()
+    .references(() => chatbots.id, { onDelete: "cascade" }),
+  slotId: uuid("slot_id")
+    .notNull()
+    .references(() => bookingSlots.id, { onDelete: "cascade" }),
+  conversationId: uuid("conversation_id").references(() => conversations.id, {
+    onDelete: "set null",
+  }),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 64 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type Chatbot = typeof chatbots.$inferSelect;
 export type NewChatbot = typeof chatbots.$inferInsert;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
+export type BookingSlot = typeof bookingSlots.$inferSelect;
+export type Booking = typeof bookings.$inferSelect;

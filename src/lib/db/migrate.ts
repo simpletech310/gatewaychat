@@ -91,6 +91,29 @@ async function main() {
     );
     CREATE INDEX IF NOT EXISTS messages_conv_idx ON messages(conversation_id);
 
+    CREATE TABLE IF NOT EXISTS booking_slots (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      chatbot_id UUID NOT NULL REFERENCES chatbots(id) ON DELETE CASCADE,
+      start_at TIMESTAMP NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 30,
+      is_booked BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS booking_slots_bot_start_idx
+      ON booking_slots(chatbot_id, start_at);
+
+    CREATE TABLE IF NOT EXISTS bookings (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      chatbot_id UUID NOT NULL REFERENCES chatbots(id) ON DELETE CASCADE,
+      slot_id UUID NOT NULL REFERENCES booking_slots(id) ON DELETE CASCADE,
+      conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(64),
+      notes TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS leads (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       chatbot_id UUID NOT NULL REFERENCES chatbots(id) ON DELETE CASCADE,
