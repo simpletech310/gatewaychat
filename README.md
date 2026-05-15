@@ -63,14 +63,54 @@ Optional env: `TRAVIS_HANDOFF_EMAIL=team@4everforward.net` to override the defau
 
 ## Deploy to Vercel
 
-1. Push this repo to GitHub.
-2. Import into Vercel and add the env vars from `.env.example`.
-3. After the first deploy, run the migrations once against the production DB:
-   ```bash
-   DATABASE_URL=... npm run db:migrate
-   DATABASE_URL=... ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run seed
-   ```
-4. Set `NEXT_PUBLIC_APP_URL` to your production URL (e.g. `https://your-app.vercel.app`) so the embed snippet points to the right origin.
+The build does **not** require any env vars to be set — DB and external API clients are lazy. You can deploy the project first and add env vars after.
+
+### 1. Push to GitHub, import in Vercel
+
+```bash
+git push -u origin <your-branch>
+```
+
+Then **New Project → Import** from your GitHub repo. Vercel detects Next.js automatically.
+
+### 2. Add env vars in the Vercel dashboard
+
+In **Project → Settings → Environment Variables**, add each of the following for *Production*, *Preview*, and *Development*. The app reads them straight from `process.env` — no manual loading code.
+
+| Variable | Required | Example / Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | ✅ | Postgres connection string with `pgvector`. Easiest: provision a free Neon DB and paste its connection string |
+| `ANTHROPIC_API_KEY` | ✅ | From console.anthropic.com (use a freshly-rotated key) |
+| `VOYAGE_API_KEY` | ✅ | From dash.voyageai.com — needed for embeddings |
+| `RESEND_API_KEY` | ✅ | From resend.com/api-keys (use a freshly-rotated key) |
+| `RESEND_FROM_EMAIL` | ✅ | e.g. `GatewayChat <notifications@yourdomain.com>` — the sending domain must be verified in Resend, or use `onboarding@resend.dev` for testing |
+| `AUTH_SECRET` | ✅ | Any 32+ char random string. Generate with `openssl rand -hex 32` |
+| `ADMIN_EMAIL` | ✅ | First admin user's login email |
+| `ADMIN_PASSWORD` | ✅ | First admin user's password (used only by `npm run seed`) |
+| `NEXT_PUBLIC_APP_URL` | ✅ | e.g. `https://your-app.vercel.app` — used in the embed snippet |
+| `TRAVIS_HANDOFF_EMAIL` | optional | Defaults to `wilform.thomas@gmail.com` for the Travis bot |
+
+After saving the env vars, hit **Deployments → Redeploy** so the running app picks them up.
+
+### 3. One-time DB setup (from your local machine)
+
+The migrate/seed scripts run from your laptop against the Vercel DB. Easiest way is to put the same values in a local `.env`:
+
+```bash
+cp .env.example .env
+# edit .env with the same values you set on Vercel
+npm install
+npm run db:migrate      # creates schema + pgvector extension
+npm run seed            # creates the admin user from ADMIN_EMAIL/ADMIN_PASSWORD
+npm run seed:travis     # creates Travis, scrapes 4everforward.net, adds sample slots
+```
+
+You should now be able to log into `https://your-app.vercel.app/login` and see Travis in the dashboard.
+
+### Notes
+
+- The Hobby plan caps serverless function duration at 60s. The scrape endpoint is set to 60s — a 12-page crawl usually finishes in under 30s. If you're on Pro, you can bump `vercel.json` and the route's `maxDuration` to 300s for very large sites.
+- The widget endpoint and the public chat endpoint are CORS-open, so the embed snippet works from any origin.
 
 ## Embedding on a client site
 

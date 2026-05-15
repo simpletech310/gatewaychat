@@ -50,7 +50,10 @@ async function main() {
         enableEmailHandoff: true,
         enableLeadForm: true,
         enableBooking: true,
-        handoffEmail: process.env.TRAVIS_HANDOFF_EMAIL || process.env.ADMIN_EMAIL || null,
+        handoffEmail:
+          process.env.TRAVIS_HANDOFF_EMAIL ||
+          process.env.ADMIN_EMAIL ||
+          "wilform.thomas@gmail.com",
       })
       .returning();
     botId = created.id;

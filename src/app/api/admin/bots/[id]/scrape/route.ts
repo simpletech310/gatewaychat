@@ -8,7 +8,7 @@ import { chunkText } from "@/lib/chunking";
 import { embed, toPgVector } from "@/lib/embeddings";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const schema = z.object({
   url: z.string().url(),
