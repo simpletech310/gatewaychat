@@ -5,14 +5,31 @@ import { db } from "@/lib/db";
 import { adminUsers } from "@/lib/db/schema";
 import { createSession } from "@/lib/auth";
 import { ensureBootstrapped } from "@/lib/bootstrap";
+import { checkConfig } from "@/lib/config";
 
 export async function POST(req: NextRequest) {
+  // Surface ALL missing required env vars at once, not just the first one.
+  const cfg = checkConfig();
+  if (!cfg.ok) {
+    return NextResponse.json(
+      {
+        error: "Server is not fully configured.",
+        kind: "setup",
+        missing: cfg.missing,
+      },
+      { status: 503 },
+    );
+  }
+
   // First request after deploy: create schema + default admin user if missing.
   try {
     await ensureBootstrapped();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Setup failed: ${msg}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `Setup failed: ${msg}`, kind: "bootstrap" },
+      { status: 500 },
+    );
   }
 
   const body = await req.json().catch(() => null);
