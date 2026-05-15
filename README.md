@@ -92,20 +92,27 @@ In **Project → Settings → Environment Variables**, add each of the following
 
 After saving the env vars, hit **Deployments → Redeploy** so the running app picks them up.
 
-### 3. One-time DB setup (from your local machine)
+### 3. Log in — schema and admin user are auto-created on first request
 
-The migrate/seed scripts run from your laptop against the Vercel DB. Easiest way is to put the same values in a local `.env`:
+The first time anyone POSTs to `/api/auth/login`, the server runs the idempotent schema SQL and inserts the default admin user (`wilform.thomas@gmail.com` / `power123`) if no admin exists. You can override those defaults by setting `ADMIN_EMAIL` and `ADMIN_PASSWORD` in Vercel before the first login.
+
+So all you need to do is:
+
+1. Open `https://your-app.vercel.app/login`
+2. Sign in with `wilform.thomas@gmail.com` / `power123` (or your overridden values)
+
+⚠️ **`power123` is a weak demo password** — change `ADMIN_PASSWORD` in Vercel env vars and re-run `npm run seed` from your laptop (or hit the DB directly) once you're past initial testing.
+
+### 4. Seed the Travis bot (one-time, from your laptop)
 
 ```bash
 cp .env.example .env
-# edit .env with the same values you set on Vercel
+# paste the same DATABASE_URL / ANTHROPIC_API_KEY / VOYAGE_API_KEY values you set on Vercel
 npm install
-npm run db:migrate      # creates schema + pgvector extension
-npm run seed            # creates the admin user from ADMIN_EMAIL/ADMIN_PASSWORD
 npm run seed:travis     # creates Travis, scrapes 4everforward.net, adds sample slots
 ```
 
-You should now be able to log into `https://your-app.vercel.app/login` and see Travis in the dashboard.
+The script prints the embed `<script>` snippet to paste into 4everforward.net.
 
 ### Notes
 
