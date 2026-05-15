@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Chatbot } from "@/lib/db/schema";
 
 export default function SettingsTab({
@@ -27,6 +27,29 @@ export default function SettingsTab({
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadLogo(file: File) {
+    setErr(null);
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/admin/bots/${bot.id}/logo`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      setForm((f) => ({ ...f, logoUrl: data.logoUrl }));
+      onChange({ ...bot, logoUrl: data.logoUrl });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -83,11 +106,51 @@ export default function SettingsTab({
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Logo URL">
+      <div className="grid grid-cols-2 gap-4 items-start">
+        <Field label="Logo">
+          <div className="flex items-center gap-3">
+            {form.logoUrl ? (
+              <img
+                src={form.logoUrl}
+                alt=""
+                className="w-12 h-12 rounded-full object-cover border border-slate-200"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200" />
+            )}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadLogo(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={uploadingLogo}
+              className="text-sm border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {uploadingLogo ? "Uploading…" : "Upload logo"}
+            </button>
+            {form.logoUrl && (
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, logoUrl: "" })}
+                className="text-sm text-red-600 hover:text-red-700"
+              >
+                Remove
+              </button>
+            )}
+          </div>
           <input
-            className="input"
+            className="input mt-2"
             type="url"
+            placeholder="…or paste an image URL"
             value={form.logoUrl}
             onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
           />

@@ -79,15 +79,17 @@ In **Project → Settings → Environment Variables**, add each of the following
 
 | Variable | Required | Example / Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | ✅ | Postgres connection string with `pgvector`. Easiest: provision a free Neon DB and paste its connection string |
-| `ANTHROPIC_API_KEY` | ✅ | From console.anthropic.com (use a freshly-rotated key) |
-| `VOYAGE_API_KEY` | ✅ | From dash.voyageai.com — needed for embeddings |
-| `RESEND_API_KEY` | ✅ | From resend.com/api-keys (use a freshly-rotated key) |
-| `RESEND_FROM_EMAIL` | ✅ | e.g. `GatewayChat <notifications@yourdomain.com>` — the sending domain must be verified in Resend, or use `onboarding@resend.dev` for testing |
+| `DATABASE_URL` | ✅ | **Use the Supabase _Transaction_ pooler URL** (port 6543), not the direct connection. Looks like `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`. The direct URL exhausts connections on serverless |
+| `SUPABASE_URL` | ✅ | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | From Supabase → Settings → API. Server-only; the `chatbot-logos` bucket is auto-created on first login |
+| `ANTHROPIC_API_KEY` | ✅ | From console.anthropic.com |
+| `VOYAGE_API_KEY` | ✅ | From dash.voyageai.com — for embeddings |
+| `RESEND_API_KEY` | ✅ | From resend.com/api-keys |
+| `RESEND_FROM_EMAIL` | ✅ | e.g. `GatewayChat <notifications@yourdomain.com>` — sending domain must be verified in Resend, or use `onboarding@resend.dev` for testing |
 | `AUTH_SECRET` | ✅ | Any 32+ char random string. Generate with `openssl rand -hex 32` |
-| `ADMIN_EMAIL` | ✅ | First admin user's login email |
-| `ADMIN_PASSWORD` | ✅ | First admin user's password (used only by `npm run seed`) |
-| `NEXT_PUBLIC_APP_URL` | ✅ | e.g. `https://your-app.vercel.app` — used in the embed snippet |
+| `ADMIN_EMAIL` | optional | Defaults to `wilform.thomas@gmail.com` |
+| `ADMIN_PASSWORD` | optional | Defaults to `power123` |
+| `NEXT_PUBLIC_APP_URL` | ✅ | e.g. `https://your-app.vercel.app` |
 | `TRAVIS_HANDOFF_EMAIL` | optional | Defaults to `wilform.thomas@gmail.com` for the Travis bot |
 
 After saving the env vars, hit **Deployments → Redeploy** so the running app picks them up.

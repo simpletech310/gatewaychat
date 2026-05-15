@@ -5,6 +5,7 @@ import {
   DEFAULT_ADMIN_EMAIL,
   DEFAULT_ADMIN_PASSWORD,
 } from "./db/schema-sql";
+import { ensureBucket, isSupabaseConfigured, LOGOS_BUCKET } from "./storage";
 
 // Idempotent first-run setup: creates the schema and the default admin user
 // if one doesn't exist. Cached for the lifetime of the serverless instance,
@@ -36,6 +37,18 @@ export function ensureBootstrapped(): Promise<void> {
       `;
     } finally {
       await sql.end();
+    }
+
+    // Provision Supabase storage buckets if Supabase is configured.
+    // Skipped silently if SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY aren't set,
+    // so the app still works against any plain Postgres.
+    if (isSupabaseConfigured()) {
+      try {
+        await ensureBucket(LOGOS_BUCKET, true);
+      } catch (err) {
+        // Non-fatal — logo uploads will surface a clearer error if the bucket is missing.
+        console.warn("Supabase bucket provisioning failed:", err);
+      }
     }
   })();
 
