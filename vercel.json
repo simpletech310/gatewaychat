@@ -5,5 +5,33 @@
     "src/app/api/chat/[botId]/route.ts": { "maxDuration": 60 },
     "src/app/api/admin/bots/[id]/scrape/route.ts": { "maxDuration": 60 },
     "src/app/api/admin/bots/[id]/knowledge/route.ts": { "maxDuration": 60 }
+  },
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "VOYAGE_API_KEY": "@voyage_api_key",
+    "RESEND_API_KEY": "@resend_api_key",
+    "RESEND_FROM_EMAIL": "@resend_from_email",
+    "AUTH_SECRET": "@auth_secret",
+    "ADMIN_EMAIL": "@admin_email",
+    "ADMIN_PASSWORD": "@admin_password",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@database_url",
+      "SUPABASE_URL": "@supabase_url",
+      "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+      "ANTHROPIC_API_KEY": "@anthropic_api_key",
+      "VOYAGE_API_KEY": "@voyage_api_key",
+      "RESEND_API_KEY": "@resend_api_key",
+      "RESEND_FROM_EMAIL": "@resend_from_email",
+      "AUTH_SECRET": "@auth_secret",
+      "ADMIN_EMAIL": "@admin_email",
+      "ADMIN_PASSWORD": "@admin_password",
+      "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
+    }
   }
 }
