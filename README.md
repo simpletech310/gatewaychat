@@ -77,6 +77,8 @@ Then **New Project → Import** from your GitHub repo. Vercel detects Next.js au
 
 In **Project → Settings → Environment Variables**, add each of the following for *Production*, *Preview*, and *Development*. The app reads them straight from `process.env` — no manual loading code.
 
+Shortcut: fill out `.env.local` locally, then run `bash scripts/setup-vercel-env.sh` to bulk-push every variable via `vercel env add`.
+
 | Variable | Required | Example / Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | ✅ | **Use the Supabase _Transaction_ pooler URL** (port 6543), not the direct connection. Looks like `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`. The direct URL exhausts connections on serverless |
