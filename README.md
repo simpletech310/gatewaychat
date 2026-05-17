@@ -73,27 +73,11 @@ git push -u origin <your-branch>
 
 Then **New Project → Import** from your GitHub repo. Vercel detects Next.js automatically.
 
-### 2. Add env vars as Vercel Secrets
+### 2. Add env vars in the Vercel dashboard
 
-`vercel.json` declares every required variable as a `@secret_name` reference, so the deploy fails fast if any are missing. Create each one as a Vercel secret with the CLI (run from the linked project directory):
+In **Project → Settings → Environment Variables**, add each of the following for *Production*, *Preview*, and *Development*. The app reads them straight from `process.env` — no manual loading code.
 
-```bash
-vercel secrets add database_url "postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres"
-vercel secrets add supabase_url "https://<project-ref>.supabase.co"
-vercel secrets add supabase_service_role_key "<key>"
-vercel secrets add anthropic_api_key "<key>"
-vercel secrets add voyage_api_key "<key>"
-vercel secrets add resend_api_key "<key>"
-vercel secrets add resend_from_email "GatewayChat <notifications@yourdomain.com>"
-vercel secrets add auth_secret "$(openssl rand -hex 32)"
-vercel secrets add admin_email "wilform.thomas@gmail.com"
-vercel secrets add admin_password "power123"
-vercel secrets add next_public_app_url "https://your-app.vercel.app"
-```
-
-Or shortcut the whole thing with `bash scripts/setup-vercel-env.sh` after filling out `.env.local` — it uses `vercel env add` (Project Environment Variables) instead of Secrets. If you go that route, remove the `env` / `build.env` blocks from `vercel.json` so they don't try to resolve `@secret_name` references that don't exist.
-
-Each variable, for reference:
+Shortcut: fill out `.env.local` locally, then run `bash scripts/setup-vercel-env.sh` to bulk-push every variable via `vercel env add`.
 
 | Variable | Required | Example / Notes |
 | --- | --- | --- |
@@ -110,7 +94,7 @@ Each variable, for reference:
 | `NEXT_PUBLIC_APP_URL` | ✅ | e.g. `https://your-app.vercel.app` |
 | `TRAVIS_HANDOFF_EMAIL` | optional | Defaults to `wilform.thomas@gmail.com` for the Travis bot |
 
-After adding the secrets, hit **Deployments → Redeploy** (or `vercel --prod`) so the running app picks them up.
+After saving the env vars, hit **Deployments → Redeploy** so the running app picks them up.
 
 ### 3. Log in — schema and admin user are auto-created on first request
 
